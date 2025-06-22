@@ -33,18 +33,38 @@ app.get('/api/artistas', async (req, res) => {
   }
 });
 
-// Rota de obras (vamos conectar ao Supabase no futuro)
+// Rota para buscar as obras do banco de dados (agora conectada!)
 app.get('/api/obras', async (req, res) => {
-    // Por enquanto, vamos devolver os dados do nosso arquivo 'dados.js'
-    // para a página principal voltar a funcionar
-    try {
-        const { obrasDeArte } = require('./dados.js');
-        res.json(obrasDeArte);
-    } catch(error) {
-        console.error('Erro ao buscar obras:', error.message);
-        res.status(500).json({ error: 'Erro ao buscar dados das obras.' });
+  // Pega os parâmetros de filtro da URL, igual fizemos antes
+  const { categoria, artista } = req.query;
+
+  try {
+    // Inicia a busca na tabela 'obras'
+    let query = supabase.from('obras').select('*');
+
+    // Se houver filtro de categoria, aplica o filtro na busca
+    if (categoria) {
+      query = query.eq('categoria', categoria);
     }
+
+    // Se houver filtro de artista, aplica o filtro na busca
+    if (artista) {
+      query = query.eq('artista', artista);
+    }
+
+    // Executa a busca no banco de dados
+    const { data, error } = await query;
+
+    if (error) throw error; // Se der erro, vai para o 'catch'
+
+    res.json(data); // Envia os dados encontrados
+
+  } catch (error) {
+    console.error('Erro ao buscar obras:', error.message);
+    res.status(500).json({ error: 'Erro ao buscar dados das obras.' });
+  }
 });
+
 
 // Liga o servidor
 app.listen(port, () => {
