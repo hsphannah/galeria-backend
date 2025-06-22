@@ -1,43 +1,52 @@
+// Importa as ferramentas necessárias
 const express = require('express');
-const cors = require('cors');
-// Importa o "createClient" da biblioteca que acabamos de instalar
+const cors = require('cors'); // O pacote de autorização
 const { createClient } = require('@supabase/supabase-js');
 
 // --- CONFIGURAÇÃO DA CONEXÃO COM O SUPABASE ---
-// Cole aqui a URL e a Chave que você copiou do painel do Supabase
+// Lembre-se de colocar suas credenciais reais aqui!
 const supabaseUrl = 'https://ezuulhnniuxobheoodnz.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dXVsaG5uaXV4b2JoZW9vZG56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNDAzODYsImV4cCI6MjA2NTkxNjM4Nn0.xb7MnUfrh2-0mhIg-b5lFmmFOTVd0hvY4g2mG5vw8fw';
 
-// Cria o "cliente" Supabase, que é a nossa ponte de conexão com o banco de dados
+// Cria a conexão com o banco de dados
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Inicia o aplicativo do servidor
 const app = express();
-app.use(cors());
 const port = 3000;
 
-// --- NOSSAS NOVAS ROTAS DE API ---
+// --- A LINHA MAIS IMPORTANTE ---
+// Habilita o CORS para que seu front-end possa acessar o back-end
+app.use(cors());
+
+// --- ROTAS DA API ---
 
 // Rota para buscar todos os artistas do banco de dados
 app.get('/api/artistas', async (req, res) => {
-  // Usamos o cliente Supabase para fazer a busca
-  const { data, error } = await supabase
-    .from('artistas') // Nome da nossa tabela
-    .select('*');     // '*' significa "selecione todas as colunas"
-
-  if (error) {
-    console.error('Erro ao buscar artistas:', error);
-    return res.status(500).json({ error: error.message });
+  try {
+    const { data, error } = await supabase.from('artistas').select('*');
+    if (error) throw error; // Se der erro na busca, ele vai para o 'catch'
+    res.json(data);
+  } catch (error) {
+    console.error('Erro ao buscar artistas:', error.message);
+    res.status(500).json({ error: 'Erro ao buscar dados dos artistas.' });
   }
-
-  res.json(data); // Envia os dados encontrados como resposta
 });
 
-// A rota de obras por enquanto não vai funcionar, pois os dados não estão mais aqui.
-// Vamos deixar um placeholder.
-app.get('/api/obras', (req, res) => {
-    res.json([{ titulo: 'Rota de obras a ser implementada' }]);
+// Rota de obras (vamos conectar ao Supabase no futuro)
+app.get('/api/obras', async (req, res) => {
+    // Por enquanto, vamos devolver os dados do nosso arquivo 'dados.js'
+    // para a página principal voltar a funcionar
+    try {
+        const { obrasDeArte } = require('./dados.js');
+        res.json(obrasDeArte);
+    } catch(error) {
+        console.error('Erro ao buscar obras:', error.message);
+        res.status(500).json({ error: 'Erro ao buscar dados das obras.' });
+    }
 });
 
+// Liga o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
 });
