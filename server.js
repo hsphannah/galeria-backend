@@ -1,49 +1,77 @@
-// 1. Importa as ferramentas necessárias
 const express = require('express');
-const cors = require('cors'); // O pacote de autorização
+const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
-// 2. --- CONFIGURAÇÃO DA CONEXÃO COM O SUPABASE ---
+// --- CONFIGURAÇÃO DA CONEXÃO COM O SUPABASE ---
 // Lembre-se de colocar suas credenciais reais aqui!
 const supabaseUrl = 'https://ezuulhnniuxobheoodnz.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dXVsaG5uaXV4b2JoZW9vZG56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNDAzODYsImV4cCI6MjA2NTkxNjM4Nn0.xb7MnUfrh2-0mhIg-b5lFmmFOTVd0hvY4g2mG5vw8fw';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 3. Inicia o aplicativo do servidor
 const app = express();
 const port = 3000;
 
-// 4. --- A LINHA MAIS IMPORTANTE (A "AUTORIZAÇÃO") ---
-app.use(cors());
+// --- MIDDLEWARES ---
+app.use(cors()); // Habilita o CORS
+app.use(express.json()); // Habilita o servidor a receber e interpretar dados JSON no corpo das requisições
 
-// 5. --- ROTAS DA API ---
+// --- ROTAS DA API ---
 
-// Rota para buscar as OBRAS do banco de dados
+// Rota para buscar obras
 app.get('/api/obras', async (req, res) => {
-  try {
-    let query = supabase.from('obras').select('*');
-    const { data, error } = await query;
-    if (error) throw error;
+    // ... (código existente, sem alterações)
+    const { data, error } = await supabase.from('obras').select('*');
+    if (error) return res.status(500).json({ error: error.message });
     res.json(data);
-  } catch (error) {
-    console.error('Erro ao buscar obras:', error.message);
-    res.status(500).json({ error: 'Erro ao buscar dados das obras.' });
-  }
 });
 
-// Rota para buscar os ARTISTAS do banco de dados
+// Rota para buscar artistas
 app.get('/api/artistas', async (req, res) => {
-  try {
+    // ... (código existente, sem alterações)
     const { data, error } = await supabase.from('artistas').select('*');
-    if (error) throw error;
+    if (error) return res.status(500).json({ error: error.message });
     res.json(data);
-  } catch (error) {
-    console.error('Erro ao buscar artistas:', error.message);
-    res.status(500).json({ error: 'Erro ao buscar dados dos artistas.' });
-  }
 });
 
-// 6. Liga o servidor
+
+// --- NOVAS ROTAS DE AUTENTICAÇÃO ---
+
+// Rota para CADASTRAR um novo usuário
+app.post('/api/register', async (req, res) => {
+    const { email, password } = req.body; // Pega o email e a senha enviados pelo front-end
+
+    // Usa a função de autenticação do Supabase para criar um usuário
+    const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        return res.status(400).json({ error: error.message });
+    }
+
+    res.status(201).json({ user: data.user });
+});
+
+// Rota para LOGAR um usuário
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body; // Pega o email e a senha
+
+    // Usa a função de autenticação do Supabase para fazer o login
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        return res.status(401).json({ error: error.message });
+    }
+
+    res.json({ user: data.user, session: data.session });
+});
+
+
+// Liga o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
 });
